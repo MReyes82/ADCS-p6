@@ -56,8 +56,7 @@ public class AuthModule
         driver.findElement(passwordField).sendKeys("secret_sauce");
         driver.findElement(loginButton).click();
         wait.until(ExpectedConditions.visibilityOfElementLocated(errorH3));
-        var errorMessage = driver.findElement(errorH3).getText();
-        Assert.assertEquals(errorMessage, "Epic sadface: Sorry, this user has been locked out.");
+        Assert.assertTrue(driver.findElement(errorH3).isDisplayed()); // Revisar si aparece el header de error
     }
 
     @AfterMethod

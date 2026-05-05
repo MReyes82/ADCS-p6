@@ -56,35 +56,94 @@ public class FilterModule
     public void testFilterLtH() // P-FILTER-01P
     {
         loginUtil("standard_user", "secret_sauce"); // llamar a la util para posicionarnos en el inventario
-        wait.until(ExpectedConditions.visibilityOfElementLocated(dropdownLtoH)); // esperamos a que este presente el dropdown
+        wait.until(ExpectedConditions.visibilityOfElementLocated(filterDropdown)); // esperamos a que este presente el dropdown
         driver.findElement(filterDropdown).click();
         driver.findElement(dropdownLtoH).click();
         // Esperamos al refresco de la lista tras aplicar el filtro
         wait.until(ExpectedConditions.visibilityOfElementLocated(inventoryList));
         // Obtener los elementos de la lista inventoryList
-        List<WebElement> items = driver.findElement(inventoryList).findElements(inventoryListElement);
-        if (items.isEmpty()) // guardrail
+        // Y obtenemos el primer elemento
+        var firstElement = getInventoryListElement(0);
+        if (firstElement == null) // guardrail
         {
-            System.err.println("[testFilterLtH] ERROR al obtener elementos del dropdown");
+            System.err.println("[testFilterLtoHError] ERROR al obtener el primer elemento del inventario");
             return;
         }
-        // Ahora obtenemos el primer elemento y buscamos el nombre del div hijo
-        // por medio de css selector ya que se encuentra bastante identado
+        // y buscamos el nombre del div hijo
+        // por medio de css selector, ya que se encuentra bastante identado
         // dentro del div inventory item
-        var firstElement = items.getFirst();
         var itemName = firstElement.findElement(By.cssSelector(".inventory_item_name ")).getText();
         // Asser para verificar que el elemento sea el deseado
         Assert.assertEquals(itemName, "Sauce Labs Onesie");
+    }
+
+    @Test
+    public void testFilterLtoHNegative()
+    {
+        // Test case similar al anterior, pero aquí se implementa la
+        // validación con el usuario problem_user, aquí fallará debido a que no funciona el filtro correctamente
+        loginUtil("problem_user", "secret_sauce");
+        wait.until(ExpectedConditions.visibilityOfElementLocated(filterDropdown));
+        driver.findElement(filterDropdown).click();
+        driver.findElement(dropdownLtoH).click();
+        wait.until(ExpectedConditions.visibilityOfElementLocated(inventoryList));
+        var firstElement = getInventoryListElement(0);
+        if (firstElement == null)
+        {
+            System.err.println("[testFilterLtoHError] ERROR al obtener el primer elemento del inventario");
+            return;
+        }
+        var itemName = firstElement.findElement(By.cssSelector(".inventory_item_name ")).getText();
+        Assert.assertEquals(itemName, "Sauce Labs Onesie"); // Este assert fallará
+    }
+
+    @Test
+    public void testFilterHtoL() // P-FILTER-02P
+    {
+        loginUtil("standard_user", "secret_sauce");
+        wait.until(ExpectedConditions.visibilityOfElementLocated(dropdownHtoL));
+        driver.findElement(filterDropdown).click();
+        driver.findElement(dropdownHtoL).click();
+        // Esperamos al refrescamiento
+        wait.until(ExpectedConditions.visibilityOfElementLocated(inventoryList));
+        var firstElement = getInventoryListElement(0);
+        if (firstElement == null)
+        {
+            System.err.println("[testFilterLtoHError] ERROR al obtener el primer elemento del inventario");
+            return;
+        }
+        var itemName = firstElement.findElement(By.cssSelector(".inventory_item_name ")).getText();
+        Assert.assertEquals(itemName, "Sauce Labs Fleece Jacket"); // verificamos que el nombre sea el correcto
+    }
+
+    @Test
+    public void testFilterHtoLNegative() // P-FILTER-02N
+    {
+        // Test case similar al anterior, pero aquí se implementa la
+        // validación con el usuario problem_user, aquí fallará debido a que no funciona el filtro correctamente
+        loginUtil("problem_user", "secret_sauce");
+        wait.until(ExpectedConditions.visibilityOfElementLocated(filterDropdown));
+        driver.findElement(filterDropdown).click();
+        driver.findElement(dropdownHtoL).click();
+        wait.until(ExpectedConditions.visibilityOfElementLocated(inventoryList));
+        var firstElement = getInventoryListElement(0);
+        if (firstElement == null)
+        {
+            System.err.println("[testFilterLtoHError] ERROR al obtener el primer elemento del inventario");
+            return;
+        }
+        var itemName = firstElement.findElement(By.cssSelector(".inventory_item_name ")).getText();
+        Assert.assertEquals(itemName, "Sauce Labs Fleece Jacket"); // Este assert fallará
     }
 
     @Test 
     public void testFilterLtoHError() // P-FILTER-05P
     {
         loginUtil("error_user", "secret_sauce");
-        wait.until(ExpectedConditions.visibilityOfElementLocated(dropdownLtoH));
+        wait.until(ExpectedConditions.visibilityOfElementLocated(filterDropdown));
         driver.findElement(filterDropdown).click();
         driver.findElement(dropdownLtoH).click();
-        // Al estar logeado con el error user, se presentara una alerta al querer
+        // Al estar logeado con el error user, se presentará una alerta al querer
         // aplicar un filtro de ordenamiento
         wait.until(ExpectedConditions.alertIsPresent());
         driver.switchTo().alert().accept(); // Cerramos la alerta para seguir 
@@ -96,7 +155,7 @@ public class FilterModule
         }
         var itemName = firstElement.findElement(By.cssSelector(".inventory_item_name ")).getText();
         // Assert que el primer elemento sigue siendo el mismo
-        // (En el test case esta definido que falla, pero aqui el assert lo ponemos
+        // (En el test case está definido que falla, pero aquí el assert lo ponemos
         // de forma que el resultado esperado es que se quede igual
         Assert.assertEquals(itemName, "Sauce Labs Backpack");
     }   

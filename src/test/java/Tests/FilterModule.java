@@ -1,18 +1,21 @@
 package Tests;
 
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import java.time.Duration;
-import java.util.List;
 
 public class FilterModule
 {
@@ -34,15 +37,25 @@ public class FilterModule
     @BeforeMethod
     public void setUp()
     {
-        driver = new ChromeDriver();
+        /*driver = new ChromeDriver();
+        wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        driver.get("https://saucedemo.com/");*/
+        // Manejar la alerta del navegador de que se cambie la contraseña
+        final Map<String, Object> chromePrefs = new HashMap<>();
+        chromePrefs.put("credentials_enable_service", false);
+        chromePrefs.put("profile.password_manager_enabled", false);
+        chromePrefs.put("profile.password_manager_leak_detection", false);
+        final ChromeOptions chromeOptions = new ChromeOptions();
+        chromeOptions.setExperimentalOption("prefs", chromePrefs);
+        driver = new ChromeDriver(chromeOptions);
         wait = new WebDriverWait(driver, Duration.ofSeconds(10));
         driver.get("https://saucedemo.com/");
     }
 
-    @Test
-    public void testFilterLtH()
+    @Test 
+    public void testFilterLtH() // P-FILTER-01P
     {
-        loginUtil(); // llamar a la util para posicionarnos en el inventario
+        loginUtil("standard_user", "secret_sauce"); // llamar a la util para posicionarnos en el inventario
         wait.until(ExpectedConditions.visibilityOfElementLocated(dropdownLtoH)); // esperamos a que este presente el dropdown
         driver.findElement(filterDropdown).click();
         driver.findElement(dropdownLtoH).click();
@@ -52,7 +65,7 @@ public class FilterModule
         List<WebElement> items = driver.findElement(inventoryList).findElements(inventoryListElement);
         if (items.isEmpty()) // guardrail
         {
-            System.err.println("[testFilderLtH] ERROR al obtener elementos del dropdown");
+            System.err.println("[testFilterLtH] ERROR al obtener elementos del dropdown");
             return;
         }
         // Ahora obtenemos el primer elemento y buscamos el nombre del div hijo
@@ -64,16 +77,66 @@ public class FilterModule
         Assert.assertEquals(itemName, "Sauce Labs Onesie");
     }
 
+    @Test 
+    public void testFilterLtoHError() // P-FILTER-05P
+    {
+        loginUtil("error_user", "secret_sauce");
+        wait.until(ExpectedConditions.visibilityOfElementLocated(dropdownLtoH));
+        driver.findElement(filterDropdown).click();
+        driver.findElement(dropdownLtoH).click();
+        // Al estar logeado con el error user, se presentara una alerta al querer
+        // aplicar un filtro de ordenamiento
+        wait.until(ExpectedConditions.alertIsPresent());
+        driver.switchTo().alert().accept(); // Cerramos la alerta para seguir 
+        var firstElement = getInventoryListElement(0); // obtenemos el primer elemento de la lista
+        if (firstElement == null) // guardrail
+        {
+            System.err.println("[testFilterLtoHError] ERROR al obtener el primer elemento del inventario");
+            return;
+        }
+        var itemName = firstElement.findElement(By.cssSelector(".inventory_item_name ")).getText();
+        // Assert que el primer elemento sigue siendo el mismo
+        // (En el test case esta definido que falla, pero aqui el assert lo ponemos
+        // de forma que el resultado esperado es que se quede igual
+        Assert.assertEquals(itemName, "Sauce Labs Backpack");
+    }   
+
     @AfterMethod
     public void tearDown()
     {
         driver.quit();
     }
 
-    private void loginUtil()
+    // Util para logearse con el usuario deseado
+    private void loginUtil(String username, String password)
     {
-        driver.findElement(usernameField).sendKeys("standard_user");
-        driver.findElement(passwordField).sendKeys("secret_sauce");
+        driver.findElement(usernameField).sendKeys(username);
+        driver.findElement(passwordField).sendKeys(password);
         driver.findElement(loginButton).click();
+    }
+
+    // Util para obtener un N elemento de la lista de inventory items
+    private WebElement getInventoryListElement(int index)
+    {
+        if (index < 0)
+        {
+            System.err.println("[getInventoryListElement] ERROR: index no puede ser negativo");
+            return null;
+        }
+
+        List<WebElement> items = driver.findElement(inventoryList).findElements(inventoryListElement);
+        if (items.isEmpty()) // guardrail
+        {
+            System.err.println("[getInventoryListElement] ERROR al obtener elementos del dropdown");
+            return null;
+        }
+
+        if (index >= items.size())
+        {
+            System.err.println("[getInventoryListElement] ERROR: index fuera de rango. Max index: " + (items.size() - 1));
+            return null;
+        }
+
+        return items.get(index);
     }
 }

@@ -28,6 +28,7 @@ public class CartModule {
     private final By removeCartBtn = By.id("remove-sauce-labs-backpack");
     private final By goToCartLink = By.xpath("//a[@class='shopping_cart_link']");
     private final By badgeCart = By.xpath("//span[@class='shopping_cart_badge']");
+    private final By cardItem = By.xpath("//div[@class='cart_item_label']");
 
     @BeforeMethod
     public void setUp(){
@@ -72,6 +73,30 @@ public class CartModule {
         Assert.assertTrue(driver.findElement(addToCartBtn).isDisplayed());
 
     }
+
+    @Test // P-CART-04P
+    public void validateRemoveSpecificProductOnCart(){
+        login("error_user");
+        addToCart();
+
+        driver.findElement(removeCartBtn).click();
+
+        Assert.assertTrue(driver.findElements(badgeCart).isEmpty(), "El badge del carrito sigue visible");
+        Assert.assertFalse(driver.findElement(removeCartBtn).isDisplayed(), "No cambió a Add to cart");
+
+    }
+
+    @Test // P-CART-06P
+    public void validateRemoveSpecificProductOnCartII(){
+        login("error_user");
+        addToCart();
+        driver.findElement(goToCartLink).click();
+        driver.findElement(removeCartBtn).click();
+
+        Assert.assertTrue(driver.findElements(cardItem).isEmpty(), "El item no se eliminó correctamente");
+    }
+
+
 
 
     @AfterMethod
